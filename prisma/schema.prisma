@@ -1,0 +1,144 @@
+// EL-YANIS — PostgreSQL schema (aligned with frontend domain types)
+
+generator client {
+  provider      = "prisma-client-js"
+  // Déploiement Linux (VPS, Render, etc.) et images Alpine : moteurs en plus du poste de build.
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum PropertyType {
+  sale
+  rent
+}
+
+enum CityKey {
+  tlemcen
+  ainTemouchent
+  sidiBelAbbes
+}
+
+enum PropertyTag {
+  exclusive
+  new
+  featured
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String         @map("password_hash")
+  role         Role           @default(user)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Agent {
+  id         String     @id @default(uuid())
+  name       String
+  photo      String
+  phone      String
+  email      String
+  bioEn      String     @map("bio_en")
+  bioFr      String     @map("bio_fr")
+  bioAr      String     @map("bio_ar")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  properties Property[]
+}
+
+model Property {
+  id            String       @id @default(uuid())
+  titleEn       String       @map("title_en")
+  titleFr       String       @map("title_fr")
+  titleAr       String       @map("title_ar")
+  descriptionEn String       @map("description_en") @db.Text
+  descriptionFr String       @map("description_fr") @db.Text
+  descriptionAr String       @map("description_ar") @db.Text
+  type          PropertyType
+  price         Int
+  city          CityKey
+  bedrooms      Int
+  bathrooms     Int
+  area          Float
+  images        Json // string[]
+  amenities     Json // string[]
+  bookedDates   Json?        @map("booked_dates") // { from, to }[]
+  featured      Boolean      @default(false)
+  tags          Json? // PropertyTag[]
+  agentId       String       @map("agent_id")
+  agent         Agent        @relation(fields: [agentId], references: [id])
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  inquiries PropertyInquiry[]
+
+  @@index([city])
+  @@index([type])
+  @@index([featured])
+}
+
+/// Services page entries (not HTTP "service" layer)
+model SiteService {
+  id            String   @id @default(uuid())
+  titleEn       String   @map("title_en")
+  titleFr       String   @map("title_fr")
+  titleAr       String   @map("title_ar")
+  descriptionEn String @map("description_en") @db.Text
+  descriptionFr String @map("description_fr") @db.Text
+  descriptionAr String @map("description_ar") @db.Text
+  iconKey       String   @map("icon_key")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("site_services")
+}
+
+model ContactSubmission {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_submissions")
+}
+
+model PropertyInquiry {
+  id             String    @id @default(uuid())
+  propertyId     String    @map("property_id")
+  property       Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name           String
+  email          String
+  phone          String?
+  message        String    @db.Text
+  preferredDate  String?   @map("preferred_date")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([propertyId])
+  @@map("property_inquiries")
+}
