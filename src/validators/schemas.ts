@@ -1,5 +1,6 @@
 import { CityKey, PropertyType } from "@prisma/client";
 import { z } from "zod";
+import { IMAGE_CONTENT_TYPE_ALIASES, SUPPORTED_IMAGE_CONTENT_TYPES } from "../utils/image-content-type.js";
 
 const cityKeySchema = z.nativeEnum(CityKey);
 const propertyTypeSchema = z.nativeEnum(PropertyType);
@@ -161,7 +162,10 @@ export const propertyInquiryPublicSchema = propertyInquiryFieldsSchema
 
 export const presignUploadBodySchema = z
   .object({
-    contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+    contentType: z.enum([
+      ...SUPPORTED_IMAGE_CONTENT_TYPES,
+      ...Object.keys(IMAGE_CONTENT_TYPE_ALIASES),
+    ] as [string, ...string[]]),
   })
   .strict();
 

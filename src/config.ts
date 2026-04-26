@@ -88,7 +88,8 @@ export const config = {
    * Stockage fichiers sur disque (développement / petit serveur) — sans S3.
    * Chemin relatif à la racine du dépôt ou absolu. Expose les fichiers sous `/uploads/...`.
    */
-  localUploadRoot: process.env.STORAGE_LOCAL_ROOT?.trim() ?? "",
+  localUploadRoot:
+    process.env.STORAGE_LOCAL_ROOT?.trim() ?? "data/uploads",
   /** URL de base pour les liens publics (défaut : http://127.0.0.1:PORT). */
   localUploadPublicBase: process.env.STORAGE_LOCAL_PUBLIC_BASE?.trim() ?? "",
 };

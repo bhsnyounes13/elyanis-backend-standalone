@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { HttpError } from "../errors/http-error.js";
 import { saveLocalDiskUpload } from "../services/storage-local.service.js";
 import { createPresignedImageUpload, isUploadStorageAvailable } from "../services/storage.service.js";
+import { normalizeImageContentType } from "../utils/image-content-type.js";
 import { presignUploadBodySchema } from "../validators/schemas.js";
 
 export async function presignPropertyImage(req: Request, res: Response): Promise<void> {
@@ -21,7 +22,14 @@ export async function presignPropertyImage(req: Request, res: Response): Promise
     });
   }
 
-  const result = await createPresignedImageUpload(parsed.data.contentType, "properties");
+  const contentType = normalizeImageContentType(parsed.data.contentType);
+  if (!contentType) {
+    throw new HttpError(400, "Type de fichier image non pris en charge.", {
+      code: "UPLOAD_CONTENT_TYPE",
+    });
+  }
+
+  const result = await createPresignedImageUpload(contentType, "properties");
   res.json(result);
 }
 

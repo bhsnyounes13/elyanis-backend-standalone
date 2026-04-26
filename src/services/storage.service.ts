@@ -6,6 +6,7 @@ import {
   createLocalDiskPresignedUpload,
   isLocalDiskStorageConfigured,
 } from "./storage-local.service.js";
+import { extensionForImageContentType, type SupportedImageContentType } from "../utils/image-content-type.js";
 
 let s3Client: S3Client | null = null;
 
@@ -39,17 +40,6 @@ function getS3Client(): S3Client | null {
   return s3Client;
 }
 
-const MIME_TO_EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
-
-export function extensionForContentType(contentType: string): string {
-  return MIME_TO_EXT[contentType] ?? "bin";
-}
-
 export interface PresignedUploadResult {
   uploadUrl: string;
   publicUrl: string;
@@ -61,14 +51,14 @@ export interface PresignedUploadResult {
  * Génère une URL PUT présignée ; le client envoie le fichier binaire directement au bucket.
  */
 export async function createPresignedImageUpload(
-  contentType: string,
+  contentType: SupportedImageContentType,
   keyPrefix = "properties",
 ): Promise<PresignedUploadResult> {
   if (isObjectStorageConfigured()) {
     const client = getS3Client();
     if (!client) throw new Error("STORAGE_NOT_CONFIGURED");
 
-    const ext = extensionForContentType(contentType);
+    const ext = extensionForImageContentType(contentType);
     const key = `${keyPrefix}/${randomUUID()}.${ext}`;
 
     const command = new PutObjectCommand({

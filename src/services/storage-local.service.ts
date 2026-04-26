@@ -2,24 +2,18 @@ import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.js";
-
-const MIME_TO_EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
-
-function extensionForContentType(contentType: string): string {
-  return MIME_TO_EXT[contentType] ?? "bin";
-}
+import {
+  extensionForImageContentType,
+  normalizeImageContentType,
+  type SupportedImageContentType,
+} from "../utils/image-content-type.js";
 
 const TTL_MS = 15 * 60 * 1000;
 const MAX_BYTES = 21 * 1024 * 1024;
 
 type Ticket = {
   token: string;
-  contentType: string;
+  contentType: SupportedImageContentType;
   key: string;
   expiresAt: number;
 };
@@ -44,7 +38,7 @@ function localPublicBase(): string {
 }
 
 export async function createLocalDiskPresignedUpload(
-  contentType: string,
+  contentType: SupportedImageContentType,
   keyPrefix = "properties",
 ): Promise<{
   uploadUrl: string;
@@ -54,7 +48,7 @@ export async function createLocalDiskPresignedUpload(
 }> {
   pruneTickets();
   const root = path.resolve(process.cwd(), config.localUploadRoot);
-  const ext = extensionForContentType(contentType);
+  const ext = extensionForImageContentType(contentType);
   const key = `${keyPrefix}/${randomUUID()}.${ext}`;
   const uploadId = randomUUID();
   const token = randomBytes(32).toString("hex");
@@ -88,8 +82,8 @@ export async function saveLocalDiskUpload(
     throw new Error("INVALID_OR_EXPIRED_TICKET");
   }
 
-  const ct = (contentTypeHeader ?? "").split(";")[0]?.trim() ?? "";
-  if (ct !== ticket.contentType) {
+  const ct = normalizeImageContentType(contentTypeHeader ?? "");
+  if (!ct || ct !== ticket.contentType) {
     throw new Error("CONTENT_TYPE_MISMATCH");
   }
 
