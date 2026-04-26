@@ -20,20 +20,22 @@ export const authBodyPublicSchema = z
   .strict();
 
 export const createPropertySchema = z.object({
-  title_en: z.string().min(1).max(500),
-  title_fr: z.string().min(1).max(500),
-  title_ar: z.string().min(1).max(500),
-  description_en: z.string().min(1).max(20000),
-  description_fr: z.string().min(1).max(20000),
-  description_ar: z.string().min(1).max(20000),
+  title: z.string().min(1).max(500).optional(),
+  title_en: z.string().min(1).max(500).optional(),
+  title_fr: z.string().min(1).max(500).optional(),
+  title_ar: z.string().min(1).max(500).optional(),
+  description: z.string().max(20000).optional(),
+  description_en: z.string().max(20000).optional(),
+  description_fr: z.string().max(20000).optional(),
+  description_ar: z.string().max(20000).optional(),
   type: propertyTypeSchema,
   price: z.number().int().positive(),
   city: cityKeySchema,
-  bedrooms: z.number().int().min(0),
-  bathrooms: z.number().int().min(0),
-  area: z.number().positive(),
+  bedrooms: z.number().int().min(0).optional(),
+  bathrooms: z.number().int().min(0).optional(),
+  area: z.number().nonnegative().optional(),
   images: z.array(z.string().min(1)).min(1),
-  amenities: z.array(z.string().min(1)),
+  amenities: z.array(z.string().min(1)).optional(),
   bookedDates: z
     .array(
       z.object({
@@ -44,19 +46,30 @@ export const createPropertySchema = z.object({
     .optional(),
   featured: z.boolean().optional(),
   tags: z.array(z.enum(["exclusive", "new", "featured"])).optional(),
-  agent_id: z.string().uuid(),
+  agent_id: z
+    .union([z.string().uuid(), z.literal(""), z.null(), z.undefined()])
+    .transform((value) => (value ? value : undefined)),
 });
 
-export const updatePropertySchema = createPropertySchema.partial();
+export const updatePropertySchema = createPropertySchema.partial().extend({
+  agent_id: z.union([z.string().uuid(), z.literal(""), z.null()]).optional(),
+});
 
 export const createAgentSchema = z.object({
   name: z.string().min(1).max(200),
-  photo: z.string().min(1),
+  photo: z.string().min(1).max(2000).optional(),
   phone: z.string().min(5).max(80),
-  email: z.string().email().max(320),
-  bio_en: z.string().min(1).max(10000),
-  bio_fr: z.string().min(1).max(10000),
-  bio_ar: z.string().min(1).max(10000),
+  email: z.string().email().max(320).optional(),
+  whatsapp: z.string().max(80).optional(),
+  position: z.string().max(160).optional(),
+  agency_name: z.string().max(200).optional(),
+  facebook: z.string().url().max(2000).optional(),
+  instagram: z.string().url().max(2000).optional(),
+  linkedin: z.string().url().max(2000).optional(),
+  status: z.enum(["active", "inactive"]).optional(),
+  bio_en: z.string().max(10000).optional(),
+  bio_fr: z.string().max(10000).optional(),
+  bio_ar: z.string().max(10000).optional(),
 });
 
 export const updateAgentSchema = createAgentSchema.partial();

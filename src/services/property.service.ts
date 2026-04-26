@@ -63,10 +63,12 @@ export async function createProperty(data: {
   bookedDates?: Prisma.InputJsonValue | null;
   featured: boolean;
   tags?: Prisma.InputJsonValue | null;
-  agentId: string;
+  agentId?: string;
 }) {
-  const agent = await prisma.agent.findUnique({ where: { id: data.agentId } });
-  if (!agent) throw new HttpError(400, "Invalid agent_id", { code: "INVALID_AGENT" });
+  if (data.agentId) {
+    const agent = await prisma.agent.findUnique({ where: { id: data.agentId } });
+    if (!agent) throw new HttpError(400, "Invalid agent_id", { code: "INVALID_AGENT" });
+  }
 
   return prisma.property.create({
     data: {
@@ -87,7 +89,7 @@ export async function createProperty(data: {
       bookedDates: data.bookedDates ?? undefined,
       featured: data.featured,
       tags: data.tags ?? undefined,
-      agentId: data.agentId,
+      agentId: data.agentId ?? null,
     },
   });
 }
@@ -112,7 +114,7 @@ export async function updateProperty(
     bookedDates: Prisma.InputJsonValue | null;
     featured: boolean;
     tags: Prisma.InputJsonValue | null;
-    agentId: string;
+    agentId: string | null;
   }>,
 ) {
   await getPropertyById(id);

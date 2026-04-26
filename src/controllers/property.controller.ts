@@ -33,21 +33,28 @@ export async function create(req: Request, res: Response): Promise<void> {
     throw new HttpError(400, "Invalid body", { details: parsed.error.flatten() });
   }
   const d = parsed.data;
+  const titleBase = d.title ?? d.title_fr ?? d.title_en ?? d.title_ar;
+  if (!titleBase) {
+    throw new HttpError(400, "Invalid body", {
+      details: { fieldErrors: { title: ["title is required"] } },
+    });
+  }
+  const descriptionBase = d.description ?? d.description_fr ?? d.description_en ?? d.description_ar ?? "";
   const row = await propertyService.createProperty({
-    titleEn: d.title_en,
-    titleFr: d.title_fr,
-    titleAr: d.title_ar,
-    descriptionEn: d.description_en,
-    descriptionFr: d.description_fr,
-    descriptionAr: d.description_ar,
+    titleEn: d.title_en ?? titleBase,
+    titleFr: d.title_fr ?? titleBase,
+    titleAr: d.title_ar ?? titleBase,
+    descriptionEn: d.description_en ?? descriptionBase,
+    descriptionFr: d.description_fr ?? descriptionBase,
+    descriptionAr: d.description_ar ?? descriptionBase,
     type: d.type,
     price: d.price,
     city: d.city,
-    bedrooms: d.bedrooms,
-    bathrooms: d.bathrooms,
-    area: d.area,
+    bedrooms: d.bedrooms ?? 0,
+    bathrooms: d.bathrooms ?? 0,
+    area: d.area ?? 0,
     images: d.images,
-    amenities: d.amenities,
+    amenities: d.amenities ?? [],
     bookedDates: d.bookedDates ?? null,
     featured: d.featured ?? false,
     tags: d.tags ?? null,
@@ -66,9 +73,19 @@ export async function update(req: Request, res: Response): Promise<void> {
   if (d.title_en !== undefined) patch.titleEn = d.title_en;
   if (d.title_fr !== undefined) patch.titleFr = d.title_fr;
   if (d.title_ar !== undefined) patch.titleAr = d.title_ar;
+  if (d.title !== undefined) {
+    patch.titleEn = d.title;
+    patch.titleFr = d.title;
+    patch.titleAr = d.title;
+  }
   if (d.description_en !== undefined) patch.descriptionEn = d.description_en;
   if (d.description_fr !== undefined) patch.descriptionFr = d.description_fr;
   if (d.description_ar !== undefined) patch.descriptionAr = d.description_ar;
+  if (d.description !== undefined) {
+    patch.descriptionEn = d.description;
+    patch.descriptionFr = d.description;
+    patch.descriptionAr = d.description;
+  }
   if (d.type !== undefined) patch.type = d.type;
   if (d.price !== undefined) patch.price = d.price;
   if (d.city !== undefined) patch.city = d.city;
@@ -80,7 +97,7 @@ export async function update(req: Request, res: Response): Promise<void> {
   if (d.bookedDates !== undefined) patch.bookedDates = d.bookedDates;
   if (d.featured !== undefined) patch.featured = d.featured;
   if (d.tags !== undefined) patch.tags = d.tags;
-  if (d.agent_id !== undefined) patch.agentId = d.agent_id;
+  if (d.agent_id !== undefined) patch.agentId = d.agent_id || null;
 
   const row = await propertyService.updateProperty(req.params.id, patch);
   res.json(propertyToJson(row));

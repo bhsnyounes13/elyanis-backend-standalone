@@ -33,6 +33,11 @@ enum PropertyTag {
   featured
 }
 
+enum AgentStatus {
+  active
+  inactive
+}
+
 model User {
   id           String         @id @default(uuid())
   email        String         @unique
@@ -56,16 +61,23 @@ model RefreshToken {
 }
 
 model Agent {
-  id         String     @id @default(uuid())
+  id         String      @id @default(uuid())
   name       String
-  photo      String
+  photo      String?
   phone      String
-  email      String
-  bioEn      String     @map("bio_en")
-  bioFr      String     @map("bio_fr")
-  bioAr      String     @map("bio_ar")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  email      String?
+  whatsapp   String?
+  position   String?
+  agencyName String?     @map("agency_name")
+  facebook   String?
+  instagram  String?
+  linkedin   String?
+  status     AgentStatus @default(active)
+  bioEn      String?     @map("bio_en")
+  bioFr      String?     @map("bio_fr")
+  bioAr      String?     @map("bio_ar")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
   properties Property[]
 }
 
@@ -88,8 +100,8 @@ model Property {
   bookedDates   Json?        @map("booked_dates") // { from, to }[]
   featured      Boolean      @default(false)
   tags          Json? // PropertyTag[]
-  agentId       String       @map("agent_id")
-  agent         Agent        @relation(fields: [agentId], references: [id])
+  agentId       String?      @map("agent_id")
+  agent         Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
 

@@ -25,6 +25,13 @@ export async function create(req: Request, res: Response): Promise<void> {
     photo: d.photo,
     phone: d.phone,
     email: d.email,
+    whatsapp: d.whatsapp,
+    position: d.position,
+    agencyName: d.agency_name,
+    facebook: d.facebook,
+    instagram: d.instagram,
+    linkedin: d.linkedin,
+    status: d.status,
     bioEn: d.bio_en,
     bioFr: d.bio_fr,
     bioAr: d.bio_ar,
@@ -43,6 +50,13 @@ export async function update(req: Request, res: Response): Promise<void> {
   if (d.photo !== undefined) patch.photo = d.photo;
   if (d.phone !== undefined) patch.phone = d.phone;
   if (d.email !== undefined) patch.email = d.email;
+  if (d.whatsapp !== undefined) patch.whatsapp = d.whatsapp;
+  if (d.position !== undefined) patch.position = d.position;
+  if (d.agency_name !== undefined) patch.agencyName = d.agency_name;
+  if (d.facebook !== undefined) patch.facebook = d.facebook;
+  if (d.instagram !== undefined) patch.instagram = d.instagram;
+  if (d.linkedin !== undefined) patch.linkedin = d.linkedin;
+  if (d.status !== undefined) patch.status = d.status;
   if (d.bio_en !== undefined) patch.bioEn = d.bio_en;
   if (d.bio_fr !== undefined) patch.bioFr = d.bio_fr;
   if (d.bio_ar !== undefined) patch.bioAr = d.bio_ar;

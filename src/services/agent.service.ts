@@ -13,14 +13,26 @@ export async function getAgentById(id: string) {
 
 export async function createAgent(data: {
   name: string;
-  photo: string;
+  photo?: string;
   phone: string;
-  email: string;
-  bioEn: string;
-  bioFr: string;
-  bioAr: string;
+  email?: string;
+  whatsapp?: string;
+  position?: string;
+  agencyName?: string;
+  facebook?: string;
+  instagram?: string;
+  linkedin?: string;
+  status?: "active" | "inactive";
+  bioEn?: string;
+  bioFr?: string;
+  bioAr?: string;
 }) {
-  return prisma.agent.create({ data });
+  return prisma.agent.create({
+    data: {
+      ...data,
+      status: data.status ?? "active",
+    },
+  });
 }
 
 export async function updateAgent(
@@ -30,6 +42,13 @@ export async function updateAgent(
     photo: string;
     phone: string;
     email: string;
+    whatsapp: string;
+    position: string;
+    agencyName: string;
+    facebook: string;
+    instagram: string;
+    linkedin: string;
+    status: "active" | "inactive";
     bioEn: string;
     bioFr: string;
     bioAr: string;
