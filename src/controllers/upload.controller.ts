@@ -1,15 +1,25 @@
 import type { Request, Response } from "express";
 import { HttpError } from "../errors/http-error.js";
-import { saveLocalDiskUpload } from "../services/storage-local.service.js";
-import { createPresignedImageUpload, isUploadStorageAvailable } from "../services/storage.service.js";
+import { isLocalDiskStorageConfigured, saveLocalDiskUpload } from "../services/storage-local.service.js";
+import {
+  createPresignedImageUpload,
+  getMissingObjectStorageVariables,
+  isUploadStorageAvailable,
+} from "../services/storage.service.js";
 import { normalizeImageContentType } from "../utils/image-content-type.js";
 import { presignUploadBodySchema } from "../validators/schemas.js";
 
 export async function presignPropertyImage(req: Request, res: Response): Promise<void> {
   if (!isUploadStorageAvailable()) {
+    const missingVars: string[] = getMissingObjectStorageVariables();
+    if (!isLocalDiskStorageConfigured()) {
+      missingVars.push("STORAGE_LOCAL_ROOT");
+    }
+    const missingText =
+      missingVars.length > 0 ? ` Variables manquantes: ${missingVars.join(", ")}.` : "";
     throw new HttpError(
       503,
-      "Stockage non configuré. En local : définissez STORAGE_LOCAL_ROOT (dossier sur disque), ou configurez S3/R2 (STORAGE_BUCKET, clés API, STORAGE_PUBLIC_URL).",
+      `Stockage non configuré.${missingText} En local: définissez STORAGE_LOCAL_ROOT, ou configurez S3/R2 (STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID, STORAGE_SECRET_ACCESS_KEY, STORAGE_PUBLIC_URL).`,
       { code: "STORAGE_NOT_CONFIGURED" },
     );
   }

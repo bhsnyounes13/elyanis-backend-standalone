@@ -10,16 +10,64 @@ import { extensionForImageContentType, type SupportedImageContentType } from "..
 
 let s3Client: S3Client | null = null;
 
-export function isObjectStorageConfigured(): boolean {
+type StorageRequiredVar =
+  | "STORAGE_BUCKET"
+  | "STORAGE_ACCESS_KEY_ID"
+  | "STORAGE_SECRET_ACCESS_KEY"
+  | "STORAGE_PUBLIC_URL";
+
+export type StorageStatus = {
+  objectStorageConfigured: boolean;
+  localStorageConfigured: boolean;
+  bucketLoaded: boolean;
+  endpointLoaded: boolean;
+  accessKeyLoaded: boolean;
+  secretKeyLoaded: boolean;
+  publicUrlLoaded: boolean;
+  forcePathStyle: boolean;
+};
+
+function hasValue(value: string): boolean {
+  return value.trim().length > 0;
+}
+
+function buildPublicObjectUrl(base: string, key: string): string {
+  const cleanBase = base.replace(/\/+$/, "");
+  const cleanKey = key.replace(/^\/+/, "");
+  return `${cleanBase}/${cleanKey}`;
+}
+
+export function getMissingObjectStorageVariables(): StorageRequiredVar[] {
   const s = config.storage;
-  return Boolean(
-    s.bucket && s.accessKeyId && s.secretAccessKey && s.publicUrl,
-  );
+  const missing: StorageRequiredVar[] = [];
+  if (!hasValue(s.bucket)) missing.push("STORAGE_BUCKET");
+  if (!hasValue(s.accessKeyId)) missing.push("STORAGE_ACCESS_KEY_ID");
+  if (!hasValue(s.secretAccessKey)) missing.push("STORAGE_SECRET_ACCESS_KEY");
+  if (!hasValue(s.publicUrl)) missing.push("STORAGE_PUBLIC_URL");
+  return missing;
+}
+
+export function isObjectStorageConfigured(): boolean {
+  return getMissingObjectStorageVariables().length === 0;
 }
 
 /** S3/R2 complet, ou dossier local `STORAGE_LOCAL_ROOT`. */
 export function isUploadStorageAvailable(): boolean {
   return isObjectStorageConfigured() || isLocalDiskStorageConfigured();
+}
+
+export function getStorageStatus(): StorageStatus {
+  const s = config.storage;
+  return {
+    objectStorageConfigured: isObjectStorageConfigured(),
+    localStorageConfigured: isLocalDiskStorageConfigured(),
+    bucketLoaded: hasValue(s.bucket),
+    endpointLoaded: hasValue(s.endpoint),
+    accessKeyLoaded: hasValue(s.accessKeyId),
+    secretKeyLoaded: hasValue(s.secretAccessKey),
+    publicUrlLoaded: hasValue(s.publicUrl),
+    forcePathStyle: s.forcePathStyle || hasValue(s.endpoint),
+  };
 }
 
 function getS3Client(): S3Client | null {
@@ -34,7 +82,7 @@ function getS3Client(): S3Client | null {
         accessKeyId: s.accessKeyId,
         secretAccessKey: s.secretAccessKey,
       },
-      forcePathStyle: s.forcePathStyle,
+      forcePathStyle: s.forcePathStyle || Boolean(s.endpoint),
     });
   }
   return s3Client;
@@ -70,7 +118,7 @@ export async function createPresignedImageUpload(
     const expiresIn = 15 * 60;
     const uploadUrl = await getSignedUrl(client, command, { expiresIn });
 
-    const publicUrl = `${config.storage.publicUrl}/${key}`;
+    const publicUrl = buildPublicObjectUrl(config.storage.publicUrl, key);
 
     return { uploadUrl, publicUrl, key, expiresIn };
   }

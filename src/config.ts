@@ -8,6 +8,14 @@ function stripTrailingSlash(s: string): string {
   return s.replace(/\/$/, "");
 }
 
+function firstNonEmptyEnv(names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 /**
  * Origine publique du site (CORS, cookies). En prod : `FRONTEND_ORIGIN` si défini,
  * sinon sur Railway `https://${RAILWAY_PUBLIC_DOMAIN}` quand un domaine public est généré.
@@ -35,6 +43,13 @@ function resolveFrontendOrigin(): string {
   );
   return "http://127.0.0.1:3000";
 }
+
+const storageEndpoint = firstNonEmptyEnv(["STORAGE_ENDPOINT", "S3_ENDPOINT"]);
+const storageRegion =
+  firstNonEmptyEnv(["STORAGE_REGION", "S3_REGION"]) || (storageEndpoint ? "auto" : "us-east-1");
+const storagePublicUrl = stripTrailingSlash(
+  firstNonEmptyEnv(["STORAGE_PUBLIC_URL", "S3_PUBLIC_URL"]),
+);
 
 export const config = {
   /** Port HTTP Express : `PORT` dans l’environnement, sinon 3000. */
@@ -73,16 +88,14 @@ export const config = {
    * `STORAGE_PUBLIC_URL` = URL publique de base des fichiers (sans slash final), ex. https://cdn.example.com ou bucket R2 public.
    */
   storage: {
-    bucket: process.env.STORAGE_BUCKET?.trim() ?? "",
-    region:
-      process.env.STORAGE_REGION?.trim() ||
-      (process.env.STORAGE_ENDPOINT?.trim() ? "auto" : "us-east-1"),
-    endpoint: process.env.STORAGE_ENDPOINT?.trim() ?? "",
-    accessKeyId: process.env.STORAGE_ACCESS_KEY_ID?.trim() ?? "",
-    secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY?.trim() ?? "",
-    publicUrl: process.env.STORAGE_PUBLIC_URL?.trim().replace(/\/$/, "") ?? "",
+    bucket: firstNonEmptyEnv(["STORAGE_BUCKET", "S3_BUCKET"]),
+    region: storageRegion,
+    endpoint: storageEndpoint,
+    accessKeyId: firstNonEmptyEnv(["STORAGE_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"]),
+    secretAccessKey: firstNonEmptyEnv(["STORAGE_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"]),
+    publicUrl: storagePublicUrl,
     /** R2 / MinIO : souvent true ; AWS hébergé sans endpoint custom : false */
-    forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE === "true" || Boolean(process.env.STORAGE_ENDPOINT?.trim()),
+    forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE === "true" || Boolean(storageEndpoint),
   },
   /**
    * Stockage fichiers sur disque (développement / petit serveur) — sans S3.

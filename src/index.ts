@@ -9,6 +9,7 @@ import { prisma } from "./prisma.js";
 import { hashPassword } from "./auth/password.js";
 import * as userService from "./services/user.service.js";
 import { createApp } from "./app.js";
+import { getStorageStatus } from "./services/storage.service.js";
 
 async function bootstrapEnvAdmin(): Promise<void> {
   const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
@@ -36,6 +37,19 @@ async function main() {
   logger.info(
     { host: "0.0.0.0", port: PORT, frontendOrigin: config.frontendOrigin },
     "api_started",
+  );
+  const storageStatus = getStorageStatus();
+  logger.info(
+    {
+      STORAGE_BUCKET_loaded: storageStatus.bucketLoaded ? "yes" : "no",
+      STORAGE_REGION_loaded: config.storage.region.trim() ? "yes" : "no",
+      STORAGE_ENDPOINT_loaded: storageStatus.endpointLoaded ? "yes" : "no",
+      STORAGE_ACCESS_KEY_ID_loaded: storageStatus.accessKeyLoaded ? "yes" : "no",
+      STORAGE_SECRET_ACCESS_KEY_loaded: storageStatus.secretKeyLoaded ? "yes" : "no",
+      STORAGE_PUBLIC_URL_loaded: storageStatus.publicUrlLoaded ? "yes" : "no",
+      STORAGE_FORCE_PATH_STYLE: storageStatus.forcePathStyle,
+    },
+    "storage_env_status",
   );
 
   await verifyDatabase(prisma);

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { prisma } from "../prisma.js";
 import * as inquiryService from "../services/inquiry.service.js";
 import { HttpError } from "../errors/http-error.js";
+import { getStorageStatus } from "../services/storage.service.js";
 
 /** Vue synthétique pour le tableau de bord admin (données réelles). */
 export async function dashboard(_req: Request, res: Response): Promise<void> {
@@ -77,4 +78,8 @@ export async function deletePropertyInquiry(req: Request, res: Response): Promis
   const ok = await inquiryService.deletePropertyInquiry(req.params.id);
   if (!ok) throw new HttpError(404, "Not found");
   res.status(204).send();
+}
+
+export async function storageStatus(_req: Request, res: Response): Promise<void> {
+  res.json(getStorageStatus());
 }

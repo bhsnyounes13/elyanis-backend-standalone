@@ -14,6 +14,7 @@ export function adminRoutes(): Router {
   r.patch("/users/:id", asyncHandler(adminUsersController.updateUserRole));
   r.delete("/users/:id", asyncHandler(adminUsersController.removeUser));
   r.post("/uploads/presign", asyncHandler(uploadController.presignPropertyImage));
+  r.get("/storage/status", asyncHandler(adminController.storageStatus));
   r.get("/dashboard", asyncHandler(adminController.dashboard));
   r.get("/inquiries", asyncHandler(adminController.listInquiries));
   r.delete("/contact-submissions/:id", asyncHandler(adminController.deleteContactSubmission));
