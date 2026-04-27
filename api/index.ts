@@ -1,8 +1,8 @@
 import "dotenv/config";
-import "./instrument.js";
+import "../src/instrument.js";
 import * as Sentry from "@sentry/node";
-import { validateStartupEnvironment } from "./env-validation.js";
-import { createApp } from "./app.js";
+import { validateStartupEnvironment } from "../src/env-validation.js";
+import { createApp } from "../src/app.js";
 
 // Only validate env on first request, skip heavy bootstrap
 validateStartupEnvironment();
