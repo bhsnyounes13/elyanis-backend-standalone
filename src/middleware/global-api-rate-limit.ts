@@ -1,4 +1,5 @@
-import rateLimit from "express-rate-limit";
+import { rateLimit } from "express-rate-limit";
+import type { Request, Response } from "express";
 
 /** Limite globale sur `/api/*` contre abus / scraping (complète les rate limits ciblés auth/forms). */
 export const globalApiRateLimiter = rateLimit({
@@ -6,11 +7,11 @@ export const globalApiRateLimiter = rateLimit({
   max: 600,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) =>
+  skip: (req: Request) =>
     req.method === "OPTIONS" ||
     req.path === "/health" ||
     (typeof req.originalUrl === "string" && req.originalUrl.startsWith("/api/health")),
-  handler: (_req, res) => {
+  handler: (_req: Request, res: Response) => {
     res.status(429).json({
       error: "Trop de requêtes. Réessayez dans quelques minutes.",
       code: "RATE_LIMIT_EXCEEDED",
