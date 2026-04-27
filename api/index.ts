@@ -1,6 +1,12 @@
 import "dotenv/config";
-import { createApp } from "../src/app.js";
+import "./instrument.js";
+import * as Sentry from "@sentry/node";
+import { validateStartupEnvironment } from "./env-validation.js";
+import { createApp } from "./app.js";
 
-const app = createApp();
+// Only validate env on first request, skip heavy bootstrap
+validateStartupEnvironment();
+
+export const app = createApp();
 
 export default app;
