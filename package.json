@@ -29,6 +29,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1033.0",
     "@prisma/client": "5.22.0",
     "@sentry/node": "^10.49.0",
+    "@supabase/supabase-js": "^2.104.1",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

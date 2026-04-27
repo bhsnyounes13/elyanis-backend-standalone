@@ -41,13 +41,8 @@ async function main() {
   const storageStatus = getStorageStatus();
   logger.info(
     {
-      STORAGE_BUCKET_loaded: storageStatus.bucketLoaded ? "yes" : "no",
-      STORAGE_REGION_loaded: config.storage.region.trim() ? "yes" : "no",
-      STORAGE_ENDPOINT_loaded: storageStatus.endpointLoaded ? "yes" : "no",
-      STORAGE_ACCESS_KEY_ID_loaded: storageStatus.accessKeyLoaded ? "yes" : "no",
-      STORAGE_SECRET_ACCESS_KEY_loaded: storageStatus.secretKeyLoaded ? "yes" : "no",
-      STORAGE_PUBLIC_URL_loaded: storageStatus.publicUrlLoaded ? "yes" : "no",
-      STORAGE_FORCE_PATH_STYLE: storageStatus.forcePathStyle,
+      SUPABASE_configured: storageStatus.supabaseConfigured ? "yes" : "no",
+      LOCAL_DISK_configured: storageStatus.localStorageConfigured ? "yes" : "no",
     },
     "storage_env_status",
   );

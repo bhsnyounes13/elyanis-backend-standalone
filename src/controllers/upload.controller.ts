@@ -3,7 +3,7 @@ import { HttpError } from "../errors/http-error.js";
 import { isLocalDiskStorageConfigured, saveLocalDiskUpload } from "../services/storage-local.service.js";
 import {
   createPresignedImageUpload,
-  getMissingObjectStorageVariables,
+  getMissingSupabaseVariables,
   isUploadStorageAvailable,
 } from "../services/storage.service.js";
 import { normalizeImageContentType } from "../utils/image-content-type.js";
@@ -11,7 +11,7 @@ import { presignUploadBodySchema } from "../validators/schemas.js";
 
 export async function presignPropertyImage(req: Request, res: Response): Promise<void> {
   if (!isUploadStorageAvailable()) {
-    const missingVars: string[] = getMissingObjectStorageVariables();
+    const missingVars: string[] = getMissingSupabaseVariables();
     if (!isLocalDiskStorageConfigured()) {
       missingVars.push("STORAGE_LOCAL_ROOT");
     }
@@ -19,7 +19,7 @@ export async function presignPropertyImage(req: Request, res: Response): Promise
       missingVars.length > 0 ? ` Variables manquantes: ${missingVars.join(", ")}.` : "";
     throw new HttpError(
       503,
-      `Stockage non configuré.${missingText} En local: définissez STORAGE_LOCAL_ROOT, ou configurez S3/R2 (STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID, STORAGE_SECRET_ACCESS_KEY, STORAGE_PUBLIC_URL).`,
+      `Stockage non configuré.${missingText} En local: définissez STORAGE_LOCAL_ROOT, ou configurez Supabase (SUPABASE_PROJECT_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY).`,
       { code: "STORAGE_NOT_CONFIGURED" },
     );
   }

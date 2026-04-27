@@ -83,26 +83,18 @@ export const config = {
       ? false
       : Boolean(process.env.TURNSTILE_SECRET_KEY?.trim()),
 
-  /**
-   * Stockage objet S3-compatible (AWS S3 ou Cloudflare R2).
-   * `STORAGE_PUBLIC_URL` = URL publique de base des fichiers (sans slash final), ex. https://cdn.example.com ou bucket R2 public.
-   */
-  storage: {
-    bucket: firstNonEmptyEnv(["STORAGE_BUCKET", "S3_BUCKET"]),
-    region: storageRegion,
-    endpoint: storageEndpoint,
-    accessKeyId: firstNonEmptyEnv(["STORAGE_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"]),
-    secretAccessKey: firstNonEmptyEnv(["STORAGE_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"]),
-    publicUrl: storagePublicUrl,
-    /** R2 / MinIO : souvent true ; AWS hébergé sans endpoint custom : false */
-    forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE === "true" || Boolean(storageEndpoint),
+  /** Supabase Configuration */
+  supabase: {
+    projectUrl: required("SUPABASE_PROJECT_URL"),
+    anonKey: required("SUPABASE_ANON_KEY"),
+    serviceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
+    storageBucket: process.env.SUPABASE_STORAGE_BUCKET ?? "property-photos",
   },
+
   /**
-   * Stockage fichiers sur disque (développement / petit serveur) — sans S3.
-   * Chemin relatif à la racine du dépôt ou absolu. Expose les fichiers sous `/uploads/...`.
+   * Fallback stockage local (développement).
    */
   localUploadRoot:
     process.env.STORAGE_LOCAL_ROOT?.trim() ?? "data/uploads",
-  /** URL de base pour les liens publics (défaut : http://127.0.0.1:PORT). */
   localUploadPublicBase: process.env.STORAGE_LOCAL_PUBLIC_BASE?.trim() ?? "",
 };

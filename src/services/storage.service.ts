@@ -1,91 +1,45 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
 import { config } from "../config.js";
+import { supabaseAdmin } from "./supabase.service.js";
 import {
   createLocalDiskPresignedUpload,
   isLocalDiskStorageConfigured,
 } from "./storage-local.service.js";
 import { extensionForImageContentType, type SupportedImageContentType } from "../utils/image-content-type.js";
 
-let s3Client: S3Client | null = null;
-
-type StorageRequiredVar =
-  | "STORAGE_BUCKET"
-  | "STORAGE_ACCESS_KEY_ID"
-  | "STORAGE_SECRET_ACCESS_KEY"
-  | "STORAGE_PUBLIC_URL";
+type StorageRequiredVar = "SUPABASE_PROJECT_URL" | "SUPABASE_ANON_KEY" | "SUPABASE_SERVICE_ROLE_KEY";
 
 export type StorageStatus = {
-  objectStorageConfigured: boolean;
+  supabaseConfigured: boolean;
   localStorageConfigured: boolean;
-  bucketLoaded: boolean;
-  endpointLoaded: boolean;
-  accessKeyLoaded: boolean;
-  secretKeyLoaded: boolean;
-  publicUrlLoaded: boolean;
-  forcePathStyle: boolean;
 };
 
 function hasValue(value: string): boolean {
   return value.trim().length > 0;
 }
 
-function buildPublicObjectUrl(base: string, key: string): string {
-  const cleanBase = base.replace(/\/+$/, "");
-  const cleanKey = key.replace(/^\/+/, "");
-  return `${cleanBase}/${cleanKey}`;
-}
-
-export function getMissingObjectStorageVariables(): StorageRequiredVar[] {
-  const s = config.storage;
+export function getMissingSupabaseVariables(): StorageRequiredVar[] {
+  const s = config.supabase;
   const missing: StorageRequiredVar[] = [];
-  if (!hasValue(s.bucket)) missing.push("STORAGE_BUCKET");
-  if (!hasValue(s.accessKeyId)) missing.push("STORAGE_ACCESS_KEY_ID");
-  if (!hasValue(s.secretAccessKey)) missing.push("STORAGE_SECRET_ACCESS_KEY");
-  if (!hasValue(s.publicUrl)) missing.push("STORAGE_PUBLIC_URL");
+  if (!hasValue(s.projectUrl)) missing.push("SUPABASE_PROJECT_URL");
+  if (!hasValue(s.anonKey)) missing.push("SUPABASE_ANON_KEY");
+  if (!hasValue(s.serviceRoleKey)) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   return missing;
 }
 
-export function isObjectStorageConfigured(): boolean {
-  return getMissingObjectStorageVariables().length === 0;
+export function isSupabaseStorageConfigured(): boolean {
+  return getMissingSupabaseVariables().length === 0;
 }
 
-/** S3/R2 complet, ou dossier local `STORAGE_LOCAL_ROOT`. */
 export function isUploadStorageAvailable(): boolean {
-  return isObjectStorageConfigured() || isLocalDiskStorageConfigured();
+  return isSupabaseStorageConfigured() || isLocalDiskStorageConfigured();
 }
 
 export function getStorageStatus(): StorageStatus {
-  const s = config.storage;
   return {
-    objectStorageConfigured: isObjectStorageConfigured(),
+    supabaseConfigured: isSupabaseStorageConfigured(),
     localStorageConfigured: isLocalDiskStorageConfigured(),
-    bucketLoaded: hasValue(s.bucket),
-    endpointLoaded: hasValue(s.endpoint),
-    accessKeyLoaded: hasValue(s.accessKeyId),
-    secretKeyLoaded: hasValue(s.secretAccessKey),
-    publicUrlLoaded: hasValue(s.publicUrl),
-    forcePathStyle: s.forcePathStyle || hasValue(s.endpoint),
   };
-}
-
-function getS3Client(): S3Client | null {
-  const s = config.storage;
-  if (!s.bucket || !s.accessKeyId || !s.secretAccessKey) return null;
-
-  if (!s3Client) {
-    s3Client = new S3Client({
-      region: s.region,
-      endpoint: s.endpoint || undefined,
-      credentials: {
-        accessKeyId: s.accessKeyId,
-        secretAccessKey: s.secretAccessKey,
-      },
-      forcePathStyle: s.forcePathStyle || Boolean(s.endpoint),
-    });
-  }
-  return s3Client;
 }
 
 export interface PresignedUploadResult {
@@ -96,31 +50,33 @@ export interface PresignedUploadResult {
 }
 
 /**
- * Génère une URL PUT présignée ; le client envoie le fichier binaire directement au bucket.
+ * Create presigned upload URL for images (Supabase or local disk fallback)
  */
 export async function createPresignedImageUpload(
   contentType: SupportedImageContentType,
   keyPrefix = "properties",
 ): Promise<PresignedUploadResult> {
-  if (isObjectStorageConfigured()) {
-    const client = getS3Client();
-    if (!client) throw new Error("STORAGE_NOT_CONFIGURED");
-
+  if (isSupabaseStorageConfigured()) {
+    const bucket = config.supabase.storageBucket;
     const ext = extensionForImageContentType(contentType);
     const key = `${keyPrefix}/${randomUUID()}.${ext}`;
-
-    const command = new PutObjectCommand({
-      Bucket: config.storage.bucket,
-      Key: key,
-      ContentType: contentType,
-    });
-
     const expiresIn = 15 * 60;
-    const uploadUrl = await getSignedUrl(client, command, { expiresIn });
 
-    const publicUrl = buildPublicObjectUrl(config.storage.publicUrl, key);
+    const { data, error } = await supabaseAdmin.storage
+      .from(bucket)
+      .createSignedUploadUrl(key, { upsert: false });
 
-    return { uploadUrl, publicUrl, key, expiresIn };
+    if (error) throw new Error(`STORAGE_ERROR: ${error.message}`);
+    if (!data) throw new Error("STORAGE_ERROR: No signed URL returned");
+
+    const publicUrl = `${config.supabase.projectUrl}/storage/v1/object/public/${bucket}/${key}`;
+
+    return {
+      uploadUrl: data.signedUrl,
+      publicUrl,
+      key,
+      expiresIn,
+    };
   }
 
   if (isLocalDiskStorageConfigured()) {

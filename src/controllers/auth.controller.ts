@@ -2,7 +2,6 @@ import type { Request, Response } from "express";
 import type { Role } from "@prisma/client";
 import { config } from "../config.js";
 import { signAccessToken, verifyAccessToken } from "../auth/jwt.js";
-import { hashPassword, verifyPassword } from "../auth/password.js";
 import {
   createRefreshToken,
   consumeRefreshToken,
@@ -10,6 +9,7 @@ import {
   revokeByRefreshCookieRaw,
 } from "../services/refresh-token.service.js";
 import * as userService from "../services/user.service.js";
+import * as supabaseAuthService from "../services/supabase-auth.service.js";
 import { HttpError } from "../errors/http-error.js";
 import { authBodyPublicSchema } from "../validators/schemas.js";
 import { assertTurnstileIfRequired } from "../utils/form-security.js";
@@ -53,6 +53,16 @@ export async function register(req: Request, res: Response): Promise<void> {
     throw new HttpError(409, "Cette adresse e-mail est déjà utilisée.", { code: "EMAIL_TAKEN" });
   }
 
+  try {
+    // Register in Supabase Auth
+    await supabaseAuthService.signUpWithSupabase(email, password);
+  } catch (e) {
+    throw new HttpError(400, e instanceof Error ? e.message : "Registration failed", {
+      code: "SIGNUP_FAILED",
+    });
+  }
+
+  // Create user in our database
   const isFirstUser = (await userService.countUsers()) === 0;
   const bootstrapAdminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
   const role: Role =
@@ -60,8 +70,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       ? "admin"
       : "user";
 
-  const passwordHash = await hashPassword(password);
-  const user = await userService.createUser(email, passwordHash, role);
+  const user = await userService.createUser(email, "", role);
 
   const accessToken = signAccessToken(user.id, user.email, user.role);
   const { rawToken, expiresAt } = await createRefreshToken(user.id);
@@ -85,22 +94,25 @@ export async function login(req: Request, res: Response): Promise<void> {
   const { email, password, turnstileToken } = parsed.data;
   await assertTurnstileIfRequired(turnstileToken, req);
 
-  const user = await userService.findUserByEmail(email);
-  const valid = user && (await verifyPassword(password, user.passwordHash));
-  if (!valid) {
-    throw new HttpError(401, "E-mail ou mot de passe incorrect.", { code: "INVALID_CREDENTIALS" });
+  try {
+    // Login with Supabase Auth (also creates user in our DB if needed)
+    const result = await supabaseAuthService.loginWithSupabase(email, password);
+
+    await revokeAllUserRefreshTokens(result.user.id);
+    const { rawToken, expiresAt } = await createRefreshToken(result.user.id);
+    setRefreshCookie(res, rawToken, expiresAt);
+
+    res.json({
+      accessToken: result.accessToken,
+      expiresIn: config.accessTokenExpiresIn,
+      user: result.user,
+    });
+  } catch (e) {
+    throw new HttpError(401, "E-mail ou mot de passe incorrect.", {
+      code: "INVALID_CREDENTIALS",
+      details: e instanceof Error ? e.message : "",
+    });
   }
-
-  await revokeAllUserRefreshTokens(user!.id);
-  const accessToken = signAccessToken(user!.id, user!.email, user!.role);
-  const { rawToken, expiresAt } = await createRefreshToken(user!.id);
-  setRefreshCookie(res, rawToken, expiresAt);
-
-  res.json({
-    accessToken,
-    expiresIn: config.accessTokenExpiresIn,
-    user: publicUser(user!),
-  });
 }
 
 export async function logout(req: Request, res: Response): Promise<void> {
