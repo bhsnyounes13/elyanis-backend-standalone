@@ -1,0 +1,187 @@
+================================================================================
+EL-YANIS BACKEND — RENDER PRODUCTION ENVIRONMENT VARIABLES
+================================================================================
+
+INSTRUCTIONS:
+1. Go to: Render Dashboard → Your Backend Service → Settings → Environment
+2. Copy each variable below
+3. Paste into Render's environment variable form
+4. Click "Deploy" to apply changes
+
+================================================================================
+CRITICAL: DATABASE & AUTHENTICATION
+================================================================================
+
+DATABASE_URL
+postgresql://elyanis_user:vD0Vsz60qNeyfjcNTcfR1daw6oTddG3M@dpg-d7nq9mgsfn5c73e8rmbg-a:5432/elyanis?schema=public
+[Status: ✅ Render PostgreSQL addon - READY TO USE]
+
+NODE_ENV
+production
+
+JWT_ACCESS_SECRET
+GxgpCpGmpKskLmQd0XUKHIoXjHo3vIxwH+1OT5yOIz8=
+[⚠️ DIFFERENT from local dev - DO NOT SHARE - Min 32 chars]
+
+PORT
+3000
+
+================================================================================
+FRONTEND CONFIGURATION
+================================================================================
+
+FRONTEND_ORIGIN
+https://elyanis.com
+[IMPORTANT: Must match your Vercel domain - https only - no trailing slash]
+
+================================================================================
+SUPABASE STORAGE (Shared between local & prod)
+================================================================================
+
+SUPABASE_PROJECT_URL
+https://jsbvblnnjegujepsokuz.supabase.co
+
+SUPABASE_ANON_KEY
+sb_publishable_N3PrCe0wnF2xACympReblQ_rCbBhwjV
+
+SUPABASE_SERVICE_ROLE_KEY
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzYnZibG5uamVndWplcHNva3V6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzI4OTk1NCwiZXhwIjoyMDkyODY1OTU0fQ.J-2hgtcqAhwkIi3VxaJJdLVXGltOBghuhyvwz2fdmqI
+
+SUPABASE_STORAGE_BUCKET
+property-photos
+
+================================================================================
+OPTIONAL — FORM SECURITY (Cloudflare Turnstile)
+================================================================================
+
+FORMS_REQUIRE_TURNSTILE
+true
+[Only set if you have Turnstile Secret Key configured below]
+
+TURNSTILE_SECRET_KEY
+[GET THIS FROM: Cloudflare Dashboard → Turnstile → Copy Secret Key]
+[Optional but recommended for production]
+
+================================================================================
+OPTIONAL — BOOTSTRAP ADMIN (first deployment only)
+================================================================================
+
+BOOTSTRAP_ADMIN_EMAIL
+admin@elyanis.com
+[Optional: Auto-creates admin user on first startup]
+
+BOOTSTRAP_ADMIN_PASSWORD
+[Use a secure temporary password - CHANGE after first login]
+
+================================================================================
+OPTIONAL — LOGGING & MONITORING
+================================================================================
+
+SENTRY_DSN
+[GET THIS FROM: Sentry → Settings → DSN]
+[Optional: Error tracking in production]
+
+SENTRY_RELEASE
+elyanis-api@1.0.0
+
+SENTRY_TRACES_SAMPLE_RATE
+0.1
+
+LOG_LEVEL
+info
+
+================================================================================
+VERIFICATION CHECKLIST BEFORE DEPLOYING
+================================================================================
+
+✅ DATABASE_URL includes `:5432` port
+✅ DATABASE_URL uses `?schema=public` 
+✅ JWT_ACCESS_SECRET is 32+ characters (base64)
+✅ FRONTEND_ORIGIN uses `https://` (not http://)
+✅ FRONTEND_ORIGIN matches Vercel domain (https://elyanis.com)
+✅ NODE_ENV is exactly "production"
+✅ All Supabase credentials are present and correct
+✅ PORT is 3000
+✅ No LOCAL dev variables mixed in (e.g., localhost:8080)
+
+================================================================================
+EXPECTED RENDER BUILD CONFIGURATION
+================================================================================
+
+BUILD COMMAND (in Render UI):
+npm install && npx prisma generate && npm run build
+
+START COMMAND (in Render UI):
+npm start
+
+RUNTIME:
+Node.js 20+ (check railway.json or Render settings)
+
+================================================================================
+POST-DEPLOYMENT VERIFICATION
+================================================================================
+
+1. CHECK RENDER LOGS (Dashboard → Logs):
+   - Should see: "api_started"
+   - Should see: "database_ready"
+   - No errors about missing DATABASE_URL or JWT_ACCESS_SECRET
+
+2. TEST API HEALTH:
+   curl https://your-service-name.onrender.com/health
+
+3. VERIFY CORS:
+   - Open https://elyanis.com in browser
+   - Check DevTools → Network → API requests
+   - Response should have header:
+     Access-Control-Allow-Origin: https://elyanis.com
+
+4. DATABASE CONNECTION:
+   - Render logs should show successful database connection
+   - Check Render PostgreSQL console for created tables
+
+5. FORCE REDEPLOY (if vars not applying):
+   - Render Dashboard → Service → "Trigger deploy"
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Error: "CONFIGURATION — variables obligatoires manquantes"
+→ Add all 3 required vars: DATABASE_URL, JWT_ACCESS_SECRET, FRONTEND_ORIGIN
+
+Error: "ECONNREFUSED" or database not connecting
+→ Check DATABASE_URL format includes port `:5432`
+→ Verify Render PostgreSQL addon is ACTIVE
+
+Error: "CORS policy: no 'Access-Control-Allow-Origin'"
+→ Verify FRONTEND_ORIGIN matches exact Vercel domain
+→ Ensure it uses https:// (not http://)
+→ Trigger redeploy after changing
+
+Error: "JWT_ACCESS_SECRET trop court"
+→ Secret must be 32+ characters
+→ Use: GxgpCpGmpKskLmQd0XUKHIoXjHo3vIxwH+1OT5yOIz8=
+
+Error: Migration failed
+→ Run one-off command: npx prisma migrate deploy
+→ OR: npx prisma db push
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. ✅ Verify local .env is correct (already done)
+2. ✅ Test locally: npm run dev
+3. ⏳ Go to Render dashboard
+4. ⏳ Add all variables from "CRITICAL" section above
+5. ⏳ Add Supabase variables
+6. ⏳ Deploy service
+7. ⏳ Monitor logs for successful startup
+8. ⏳ Test with frontend
+
+Questions?
+- Review DATABASE_URL format matches: postgresql://user:pass@host:port/db?schema=public
+- Ensure FRONTEND_ORIGIN is production domain (https://elyanis.com)
+- Check all credential sources are correct (Supabase console, Render addon)
+
+================================================================================
