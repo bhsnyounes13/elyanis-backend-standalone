@@ -1,7 +1,8 @@
-import rateLimit from "express-rate-limit";
+import { rateLimit } from "express-rate-limit";
+import type { Request, Response } from "express";
 
 const json429 = (msg: string) =>
-  (_req: unknown, res: import("express").Response) => {
+  (_req: Request, res: Response) => {
     res.status(429).json({
       error: msg,
       code: "RATE_LIMIT_EXCEEDED",
